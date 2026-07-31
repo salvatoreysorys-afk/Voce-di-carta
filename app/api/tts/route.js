@@ -1,9 +1,20 @@
-import { MsEdgeTTS, OUTPUT_FORMAT } from "msedge-tts";
-
-// Deve girare su Node.js (non Edge runtime) perché msedge-tts apre una
-// connessione WebSocket verso il servizio vocale di Microsoft.
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+function escapeSsml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function normalizeRate(rate) {
+  if (rate.startsWith("-") || rate.startsWith("+")) return rate;
+  if (rate === "0%") return "+0%";
+  return `+${rate}`;
+}
 
 export async function POST(request) {
   try {
@@ -17,16 +28,52 @@ export async function POST(request) {
       });
     }
 
-    const tts = new MsEdgeTTS();
-    await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_48KBITRATE_MONO_MP3);
+    const key = process.env.AZURE_SPEECH_KEY;
+    const region = process.env.AZURE_SPEECH_REGION;
 
-    const { audioStream } = tts.toStream(text, { rate, pitch });
-
-    const chunks = [];
-    for await (const chunk of audioStream) {
-      chunks.push(chunk);
+    if (!key || !region) {
+      return new Response(
+        JSON.stringify({
+          error:
+            "Configurazione mancante: aggiungi AZURE_SPEECH_KEY e AZURE_SPEECH_REGION nelle variabili d'ambiente di Vercel.",
+        }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
     }
-    const audioBuffer = Buffer.concat(chunks);
+
+    const ssml = `<speak version="1.0" xml:lang="it-IT">
+  <voice name="${voice}">
+    <prosody rate="${normalizeRate(rate)}" pitch="${pitch}">${escapeSsml(text)}</prosody>
+  </voice>
+</speak>`;
+
+    const azureRes = await fetch(
+      `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
+      {
+        method: "POST",
+        headers: {
+          "Ocp-Apim-Subscription-Key": key,
+          "Content-Type": "application/ssml+xml",
+          "X-Microsoft-OutputFormat": "audio-24khz-48kbitrate-mono-mp3",
+          "User-Agent": "voce-di-carta",
+        },
+        body: ssml,
+      }
+    );
+
+    if (!azureRes.ok) {
+      const details = await azureRes.text();
+      console.error("Errore Azure TTS:", azureRes.status, details);
+      return new Response(
+        JSON.stringify({
+          error: "Generazione audio non riuscita",
+          details: `Azure ha risposto ${azureRes.status}`,
+        }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const audioBuffer = Buffer.from(await azureRes.arrayBuffer());
 
     return new Response(audioBuffer, {
       status: 200,
