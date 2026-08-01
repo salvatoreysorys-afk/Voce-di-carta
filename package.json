@@ -11,7 +11,6 @@
     "next": "14.2.5",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "msedge-tts": "^2.0.6",
     "mammoth": "^1.8.0",
     "pdfjs-dist": "3.11.174"
   }
