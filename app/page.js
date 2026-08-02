@@ -58,6 +58,9 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [status, setStatus] = useState("In attesa di un documento");
 
+  const [inputMode, setInputMode] = useState("file"); // "file" | "text"
+  const [textDraft, setTextDraft] = useState("");
+
   const audioRef = useRef(null);
   const cacheRef = useRef(new Map());
 
@@ -170,6 +173,24 @@ export default function Home() {
     if (file) handleFile(file);
   };
 
+  const submitTypedText = () => {
+    setError(null);
+    if (!textDraft.trim()) {
+      setError("Scrivi o detta prima un po' di testo.");
+      return;
+    }
+    const parts = splitIntoChunks(textDraft);
+    if (parts.length === 0) {
+      setError("Non ho trovato testo leggibile.");
+      return;
+    }
+    setFileName(null);
+    setChunks(parts);
+    setCurrentIndex(0);
+    cacheRef.current = new Map();
+    setStatus(`Pronto — ${parts.length} paragrafi`);
+  };
+
   const synthesize = async (index) => {
     const key = `${voice}|${rate}|${index}`;
     if (cacheRef.current.has(key)) return cacheRef.current.get(key);
@@ -269,32 +290,81 @@ export default function Home() {
 
       {error && <p className="alert">{error}</p>}
 
-      <section
-        className="dropzone"
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={onDrop}
-      >
-        <label htmlFor="file-input" className="dropzone__label">
-          <span className="dropzone__title">
-            {fileName ? fileName : "Trascina qui un file .docx o .pdf"}
-          </span>
-          <span className="dropzone__hint">
-            {fileName ? "Trascina un altro file per sostituirlo" : "oppure scegli dal computer"}
-          </span>
-        </label>
-        <input
-          id="file-input"
-          type="file"
-          accept=".docx,.pdf"
-          onChange={onFileInput}
-          hidden
-        />
-        {fileName && chunks.length > 0 && (
-          <button className="clear-btn" onClick={resetDocument}>
-            Rimuovi documento
-          </button>
-        )}
-      </section>
+      <div className="mode-tabs">
+        <button
+          className={`mode-tab ${inputMode === "file" ? "mode-tab--active" : ""}`}
+          onClick={() => setInputMode("file")}
+        >
+          Carica documento
+        </button>
+        <button
+          className={`mode-tab ${inputMode === "text" ? "mode-tab--active" : ""}`}
+          onClick={() => setInputMode("text")}
+        >
+          Scrivi o detta
+        </button>
+      </div>
+
+      {inputMode === "file" ? (
+        <section
+          className="dropzone"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={onDrop}
+        >
+          <label htmlFor="file-input" className="dropzone__label">
+            <span className="dropzone__title">
+              {fileName ? fileName : "Trascina qui un file .docx o .pdf"}
+            </span>
+            <span className="dropzone__hint">
+              {fileName ? "Trascina un altro file per sostituirlo" : "oppure scegli dal computer"}
+            </span>
+          </label>
+          <input
+            id="file-input"
+            type="file"
+            accept=".docx,.pdf"
+            onChange={onFileInput}
+            hidden
+          />
+          {fileName && chunks.length > 0 && (
+            <button className="clear-btn" onClick={resetDocument}>
+              Rimuovi documento
+            </button>
+          )}
+        </section>
+      ) : (
+        <section className="write-box">
+          <textarea
+            className="write-box__area"
+            placeholder="Scrivi qui il testo, oppure tocca il microfono e detta ad alta voce…"
+            value={textDraft}
+            onChange={(e) => setTextDraft(e.target.value)}
+            rows={8}
+          />
+          <div className="write-box__actions">
+            <button
+              className="write-box__submit"
+              onClick={submitTypedText}
+              disabled={!textDraft.trim()}
+            >
+              Prepara la lettura
+            </button>
+            {textDraft && (
+              <button
+                className="clear-btn"
+                onClick={() => setTextDraft("")}
+              >
+                Svuota
+              </button>
+            )}
+          </div>
+          <p className="write-box__hint">
+            🎙 Per dettare, usa il microfono della tastiera del telefono
+            (l'icona vicino alla barra spazio) — funziona direttamente in
+            questa casella, su Android e su iPhone.
+          </p>
+        </section>
+      )}
 
       <section className="controls">
         <div className="control-group">
