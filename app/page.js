@@ -3,6 +3,7 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 
 const STORAGE_KEY = "voce-di-carta:documento";
+const NOTES_KEY = "voce-di-carta:appunti";
 
 const VOICES = [
   { id: "it-IT-DiegoNeural", label: "Diego", note: "caldo, pacato" },
@@ -60,6 +61,8 @@ export default function Home() {
 
   const [inputMode, setInputMode] = useState("file"); // "file" | "text"
   const [textDraft, setTextDraft] = useState("");
+  const [savedNotes, setSavedNotes] = useState([]);
+  const [activeNoteId, setActiveNoteId] = useState(null);
 
   const audioRef = useRef(null);
   const cacheRef = useRef(new Map());
@@ -97,6 +100,74 @@ export default function Home() {
       console.error("Impossibile salvare il documento:", err);
     }
   }, [chunks, currentIndex, fileName]);
+
+  // Carica gli appunti salvati al primo avvio
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(NOTES_KEY);
+      if (raw) setSavedNotes(JSON.parse(raw));
+    } catch (err) {
+      console.error("Impossibile caricare gli appunti salvati:", err);
+    }
+  }, []);
+
+  const persistNotes = (notes) => {
+    setSavedNotes(notes);
+    try {
+      window.localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+    } catch (err) {
+      console.error("Impossibile salvare gli appunti:", err);
+    }
+  };
+
+  const noteTitle = (text) => {
+    const firstLine = text.trim().split("\n")[0] || "Senza titolo";
+    return firstLine.length > 40 ? firstLine.slice(0, 40) + "…" : firstLine;
+  };
+
+  const saveNote = () => {
+    if (!textDraft.trim()) return;
+    if (activeNoteId) {
+      // aggiorna un appunto esistente
+      const updated = savedNotes.map((n) =>
+        n.id === activeNoteId
+          ? { ...n, text: textDraft, title: noteTitle(textDraft), updatedAt: Date.now() }
+          : n
+      );
+      persistNotes(updated);
+    } else {
+      // crea un nuovo appunto
+      const newNote = {
+        id: Date.now().toString(),
+        title: noteTitle(textDraft),
+        text: textDraft,
+        updatedAt: Date.now(),
+      };
+      persistNotes([newNote, ...savedNotes]);
+      setActiveNoteId(newNote.id);
+    }
+  };
+
+  const newNote = () => {
+    setTextDraft("");
+    setActiveNoteId(null);
+  };
+
+  const loadNote = (id) => {
+    const note = savedNotes.find((n) => n.id === id);
+    if (note) {
+      setTextDraft(note.text);
+      setActiveNoteId(note.id);
+    }
+  };
+
+  const deleteNote = (id) => {
+    persistNotes(savedNotes.filter((n) => n.id !== id));
+    if (activeNoteId === id) {
+      setTextDraft("");
+      setActiveNoteId(null);
+    }
+  };
 
   const resetDocument = () => {
     setFileName(null);
@@ -334,9 +405,31 @@ export default function Home() {
         </section>
       ) : (
         <section className="write-box">
+          {savedNotes.length > 0 && (
+            <div className="notes-list">
+              {savedNotes.map((n) => (
+                <div
+                  key={n.id}
+                  className={`note-chip ${activeNoteId === n.id ? "note-chip--active" : ""}`}
+                >
+                  <button className="note-chip__label" onClick={() => loadNote(n.id)}>
+                    {n.title}
+                  </button>
+                  <button
+                    className="note-chip__delete"
+                    onClick={() => deleteNote(n.id)}
+                    aria-label="Elimina appunto"
+                    title="Elimina"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <textarea
             className="write-box__area"
-            placeholder="Scrivi qui il testo, oppure tocca il microfono e detta ad alta voce…"
+            placeholder="Scrivi qui il testo, oppure detta con il microfono della tastiera…"
             value={textDraft}
             onChange={(e) => setTextDraft(e.target.value)}
             rows={8}
@@ -349,12 +442,16 @@ export default function Home() {
             >
               Prepara la lettura
             </button>
+            <button
+              className="write-box__save"
+              onClick={saveNote}
+              disabled={!textDraft.trim()}
+            >
+              {activeNoteId ? "Aggiorna" : "Salva come nuovo appunto"}
+            </button>
             {textDraft && (
-              <button
-                className="clear-btn"
-                onClick={() => setTextDraft("")}
-              >
-                Svuota
+              <button className="clear-btn" onClick={newNote}>
+                Nuovo appunto vuoto
               </button>
             )}
           </div>

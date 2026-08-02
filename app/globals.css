@@ -234,6 +234,74 @@ body {
 }
 
 
+.notes-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.note-chip {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.note-chip--active {
+  border-color: var(--amber);
+  background: rgba(232, 165, 75, 0.14);
+}
+
+.note-chip__label {
+  background: none;
+  border: none;
+  color: var(--parchment);
+  font-size: 13px;
+  padding: 6px 4px 6px 14px;
+  cursor: pointer;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-chip__delete {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 6px 12px 6px 6px;
+  cursor: pointer;
+}
+
+.note-chip__delete:hover {
+  color: var(--ember);
+}
+
+.write-box__save {
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--parchment);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.write-box__save:hover:not(:disabled) {
+  border-color: var(--amber);
+}
+
+.write-box__save:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .write-box__submit {
   padding: 9px 18px;
   border-radius: 10px;
