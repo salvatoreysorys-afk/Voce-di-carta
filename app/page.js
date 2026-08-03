@@ -9,16 +9,7 @@ const MONTHLY_LIMIT = 500000;
 
 const VOICES = [
   { id: "it-IT-GiuseppeNeural", label: "Giuseppe", note: "caldo, naturale" },
-  { id: "it-IT-BenignoNeural", label: "Benigno", note: "caldo, rassicurante" },
-  { id: "it-IT-LisandroNeural", label: "Lisandro", note: "maturo, riflessivo" },
-  { id: "it-IT-CataldoNeural", label: "Cataldo", note: "maturo, corposo" },
   { id: "it-IT-GianniNeural", label: "Gianni", note: "asciutto, diretto" },
-];
-
-const RATES = [
-  { id: "-15%", label: "Lenta" },
-  { id: "0%", label: "Naturale" },
-  { id: "15%", label: "Sostenuta" },
 ];
 
 function splitIntoChunks(rawText) {
@@ -63,7 +54,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState(true);
   const [voice, setVoice] = useState(VOICES[0].id);
-  const [rate, setRate] = useState("0%");
+  const rate = "0%";
   const [error, setError] = useState(null);
   const [status, setStatus] = useState("In attesa di un documento");
 
@@ -515,24 +506,6 @@ export default function Home() {
               >
                 {v.label}
                 <em>{v.note}</em>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="control-group">
-          <span className="control-label">Ritmo</span>
-          <div className="pill-row">
-            {RATES.map((r) => (
-              <button
-                key={r.id}
-                className={`pill ${rate === r.id ? "pill--active" : ""}`}
-                onClick={() => {
-                  setRate(r.id);
-                  cacheRef.current = new Map();
-                }}
-              >
-                {r.label}
               </button>
             ))}
           </div>
