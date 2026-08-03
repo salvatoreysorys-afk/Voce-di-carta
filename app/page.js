@@ -4,6 +4,8 @@ import { useRef, useState, useCallback, useEffect } from "react";
 
 const STORAGE_KEY = "voce-di-carta:documento";
 const NOTES_KEY = "voce-di-carta:appunti";
+const USAGE_PREFIX = "voce-di-carta:utilizzo:";
+const MONTHLY_LIMIT = 500000;
 
 const VOICES = [
   { id: "it-IT-DiegoNeural", label: "Diego", note: "caldo, pacato" },
@@ -47,6 +49,10 @@ function splitIntoChunks(rawText) {
   return chunks;
 }
 
+function totalChars(parts) {
+  return parts.reduce((sum, p) => sum + p.length, 0);
+}
+
 export default function Home() {
   const [fileName, setFileName] = useState(null);
   const [chunks, setChunks] = useState([]);
@@ -63,6 +69,7 @@ export default function Home() {
   const [textDraft, setTextDraft] = useState("");
   const [savedNotes, setSavedNotes] = useState([]);
   const [activeNoteId, setActiveNoteId] = useState(null);
+  const [monthlyUsage, setMonthlyUsage] = useState(0);
 
   const audioRef = useRef(null);
   const cacheRef = useRef(new Map());
@@ -78,7 +85,7 @@ export default function Home() {
           setChunks(saved.chunks);
           setCurrentIndex(saved.currentIndex || 0);
           setStatus(
-            `Ripreso — paragrafo ${(saved.currentIndex || 0) + 1} di ${saved.chunks.length}`
+            `Ripreso — paragrafo ${(saved.currentIndex || 0) + 1} di ${saved.chunks.length} · ${totalChars(saved.chunks).toLocaleString("it-IT")} caratteri totali`
           );
         }
       }
@@ -110,6 +117,33 @@ export default function Home() {
       console.error("Impossibile caricare gli appunti salvati:", err);
     }
   }, []);
+
+  const currentUsageKey = () => {
+    const now = new Date();
+    return `${USAGE_PREFIX}${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  // Carica il conteggio dei caratteri usati questo mese
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(currentUsageKey());
+      setMonthlyUsage(raw ? parseInt(raw, 10) || 0 : 0);
+    } catch (err) {
+      console.error("Impossibile caricare il contatore mensile:", err);
+    }
+  }, []);
+
+  const addUsage = (chars) => {
+    setMonthlyUsage((prev) => {
+      const next = prev + chars;
+      try {
+        window.localStorage.setItem(currentUsageKey(), String(next));
+      } catch (err) {
+        console.error("Impossibile salvare il contatore mensile:", err);
+      }
+      return next;
+    });
+  };
 
   const persistNotes = (notes) => {
     setSavedNotes(notes);
@@ -225,7 +259,7 @@ export default function Home() {
         return;
       }
       setChunks(parts);
-      setStatus(`Pronto — ${parts.length} paragrafi`);
+      setStatus(`Pronto — ${parts.length} paragrafi · ${totalChars(parts).toLocaleString("it-IT")} caratteri totali`);
     } catch (err) {
       console.error(err);
       setError("Non sono riuscito a leggere questo file.");
@@ -259,7 +293,7 @@ export default function Home() {
     setChunks(parts);
     setCurrentIndex(0);
     cacheRef.current = new Map();
-    setStatus(`Pronto — ${parts.length} paragrafi`);
+    setStatus(`Pronto — ${parts.length} paragrafi · ${totalChars(parts).toLocaleString("it-IT")} caratteri totali`);
   };
 
   const synthesize = async (index) => {
@@ -275,6 +309,7 @@ export default function Home() {
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
     cacheRef.current.set(key, url);
+    addUsage(chunks[index].length);
     return url;
   };
 
@@ -527,6 +562,18 @@ export default function Home() {
       )}
 
       <audio ref={audioRef} onEnded={onEnded} hidden />
+
+      <div className="usage-meter">
+        <div className="usage-meter__bar">
+          <div
+            className="usage-meter__fill"
+            style={{ width: `${Math.min(100, (monthlyUsage / MONTHLY_LIMIT) * 100)}%` }}
+          />
+        </div>
+        <p className="usage-meter__label">
+          {monthlyUsage.toLocaleString("it-IT")} di {MONTHLY_LIMIT.toLocaleString("it-IT")} caratteri usati questo mese (stima)
+        </p>
+      </div>
 
       <footer className="footnote">
         Le voci sono generate tramite voci neurali gratuite — nessun costo,

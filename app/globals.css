@@ -490,6 +490,32 @@ body {
   flex-shrink: 0;
 }
 
+.usage-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.usage-meter__bar {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--panel-2);
+  overflow: hidden;
+}
+
+.usage-meter__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), var(--ember));
+  transition: width 0.3s ease;
+}
+
+.usage-meter__label {
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+}
+
 .footnote {
   text-align: center;
   font-size: 12px;
