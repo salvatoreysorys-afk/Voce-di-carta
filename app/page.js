@@ -8,8 +8,9 @@ const USAGE_PREFIX = "voce-di-carta:utilizzo:";
 const MONTHLY_LIMIT = 500000;
 
 const VOICES = [
-  { id: "it-IT-GiuseppeNeural", label: "Giuseppe", note: "caldo, naturale" },
-  { id: "it-IT-GianniNeural", label: "Gianni", note: "asciutto, diretto" },
+  { id: "it-IT-AlessioMultilingualNeural", label: "Voce 1", note: "Alessio" },
+  { id: "it-IT-MarcelloMultilingualNeural", label: "Voce 2", note: "Marcello" },
+  { id: "it-IT-GiuseppeNeural", label: "Voce 3", note: "Giuseppe" },
 ];
 
 function splitIntoChunks(rawText) {
