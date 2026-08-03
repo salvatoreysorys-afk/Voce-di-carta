@@ -8,9 +8,11 @@ const USAGE_PREFIX = "voce-di-carta:utilizzo:";
 const MONTHLY_LIMIT = 500000;
 
 const VOICES = [
-  { id: "it-IT-DiegoNeural", label: "Diego", note: "caldo, pacato" },
-  { id: "it-IT-GiuseppeNeural", label: "Giuseppe", note: "profondo, maturo" },
-  { id: "it-IT-RinaldoNeural", label: "Rinaldo", note: "narrante, disteso" },
+  { id: "it-IT-GiuseppeNeural", label: "Giuseppe", note: "caldo, naturale" },
+  { id: "it-IT-BenignoNeural", label: "Benigno", note: "caldo, rassicurante" },
+  { id: "it-IT-LisandroNeural", label: "Lisandro", note: "maturo, riflessivo" },
+  { id: "it-IT-CataldoNeural", label: "Cataldo", note: "maturo, corposo" },
+  { id: "it-IT-GianniNeural", label: "Gianni", note: "asciutto, diretto" },
 ];
 
 const RATES = [
